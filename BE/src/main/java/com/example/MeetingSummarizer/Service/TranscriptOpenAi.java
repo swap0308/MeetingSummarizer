@@ -1,4 +1,4 @@
-package com.example.MeetingSummarizer.Service;
+package src.main.java.com.example.MeetingSummarizer.Service;
 
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
