@@ -21,7 +21,7 @@ body {
 }
 
 .sidebar {
-  background-color: rgb(48, 48, 48);
-  height: fit-content;
+  background-color: #303030;
   border-radius: 6px;
+  color: white;
 }
