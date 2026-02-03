@@ -1,4 +1,4 @@
-package com.example.MeetingSummarizer.Response.GeminiResponse;
+package src.main.java.com.example.MeetingSummarizer.Response.GeminiResponse;
 
 import java.util.List;
 
