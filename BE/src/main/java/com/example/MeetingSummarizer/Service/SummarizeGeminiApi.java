@@ -1,19 +1,24 @@
-package src.main.java.com.example.MeetingSummarizer.Service;
+package com.example.MeetingSummarizer.Service;
 
+import com.example.MeetingSummarizer.BaseFunctions.BaseServices;
+import com.example.MeetingSummarizer.Request.GeminiRequest.GeminiRequest;
+import com.example.MeetingSummarizer.Request.GeminiRequest.GenerationConfig;
+import com.example.MeetingSummarizer.Request.GeminiRequest.Property;
+import com.example.MeetingSummarizer.Request.GeminiRequest.ResponseSchema;
+import com.example.MeetingSummarizer.Response.GeminiResponse.Candidate;
+import com.example.MeetingSummarizer.Response.GeminiResponse.Content;
+import com.example.MeetingSummarizer.Response.GeminiResponse.GemResponse;
+import com.example.MeetingSummarizer.Response.GeminiResponse.Part;
+import com.example.MeetingSummarizer.Response.MeetingResponse.MeetingResponse;
+import com.example.MeetingSummarizer.Response.UIResponse.UserResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
-import src.main.java.com.example.MeetingSummarizer.BaseFunctions.BaseServices;
-import src.main.java.com.example.MeetingSummarizer.Response.GeminiResponse.Candidate;
-import src.main.java.com.example.MeetingSummarizer.Response.GeminiResponse.Content;
-import src.main.java.com.example.MeetingSummarizer.Response.GeminiResponse.GemResponse;
-import src.main.java.com.example.MeetingSummarizer.Response.UIResponse.UserResponse;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 @Service
 public class SummarizeGeminiApi {
@@ -27,12 +32,11 @@ public class SummarizeGeminiApi {
 
 
     private final WebClient webClient;
-    private final BaseServices baseServices;
+    private final MeetingInsightService meetingInsightService;
 
-
-    public SummarizeGeminiApi(WebClient webClient, BaseServices baseServices){
-        this.webClient = webClient;
-        this.baseServices = baseServices;
+    public SummarizeGeminiApi(WebClient.Builder webClient, MeetingInsightService meetingInsightService){
+        this.webClient = webClient.build();
+        this.meetingInsightService = meetingInsightService;
     }
 
 
@@ -46,17 +50,49 @@ public class SummarizeGeminiApi {
         return prompt.toString();
     }
 
-    Map<String, Object> getRequestBody(String prompt){
-        return Map.of("contents", List.of(
-                Map.of("parts", List.of(
-                        Map.of("text", prompt)
-                ))
-        ));
+    GeminiRequest getRequestBody(String prompt){
+        GeminiRequest geminiRequest = new GeminiRequest();
+
+        Property stringProperty = new Property();;
+        stringProperty.setType("string");
+
+        Property arrayItem = new Property();
+        arrayItem.setType("string");
+
+        Property arrayProperty = new Property();
+        arrayProperty.setType("array");
+        arrayProperty.setItems(arrayItem);
+
+        Map<String, Property> props = new HashMap<>();
+        props.put("title" , stringProperty);
+        props.put("summary" , stringProperty);
+        props.put("actionItems" , arrayProperty);
+
+
+        ResponseSchema responseSchema = new ResponseSchema();
+        responseSchema.setType("object");
+        responseSchema.setProperties(props);
+        responseSchema.setRequired(List.of("title","summary","actionItems"));
+
+        GenerationConfig generationConfig = new GenerationConfig();
+        generationConfig.setResponseMimeType("application/json");
+        generationConfig.setResponseSchema(responseSchema);
+
+        Part part = new Part();
+        part.setText(prompt);
+
+        Content content = new Content();
+        content.setParts(List.of(part));
+
+        geminiRequest.setContents(List.of(content));
+        geminiRequest.setGenerationConfig(generationConfig);
+
+        return geminiRequest;
     }
 
-    public UserResponse extractRequiredResponseFromGeminiResponse(GemResponse gemResponse){
+    public void extractRequiredResponseFromGeminiResponse(UserResponse response,GemResponse gemResponse){
 
-        UserResponse response = new UserResponse();
+        System.out.println("Inside the extractRequiredResponseFromGeminiResponse function");
 
         try{
             if(null != gemResponse && !gemResponse.getCandidates().isEmpty() && !gemResponse.getCandidates().isEmpty()){
@@ -68,52 +104,63 @@ public class SummarizeGeminiApi {
                     if(null != content.getParts() && !content.getParts().isEmpty()){
                         String result = content.getParts().getFirst().getText();
 
-                        String title = getTitleFromText(result);
-                        String summary = getSummaryFromText(result);
-                        String actionItems = getActionItemsFromText(result);
+                        System.out.println("GEminiResult" + result);
 
-                        if(baseServices.isNullOrEmpty(title)){
-                            response.setTitle(title);
-                        }
+                        ObjectMapper objectMapper = new ObjectMapper();
+                        MeetingResponse meetingResponse = objectMapper.readValue(result, MeetingResponse.class);
 
-                        if(baseServices.isNullOrEmpty(summary)){
-                            response.setSummarizedText(summary);
-                        }
+                        System.out.println("MeetingResponse from Gemini API " + meetingResponse);
 
-                        if(baseServices.isNullOrEmpty(actionItems)){
-                            response.setActionItems(actionItems);
-                        }
+//                        String title = getTitleFromText(result);
+//                        String summary = getSummaryFromText(result);
+//                        String actionItems = getActionItemsFromText(result);
+
+                        String title = meetingResponse.getTitle();
+                        String summary = meetingResponse.getSummary();
+
+                        response.setTitle(title);
+                        response.setSummarizedText(summary);
+                        response.setActionItems(meetingResponse.getActionItems());
+
+                        System.out.println("Title  " +  title);
+                        System.out.println("Summary  " +  summary);
                     }
                 }
             }
-            return response;
+
+            System.out.println("This is the userResponse :: " + response);
         }catch (Exception e){
-        return response; // Handling needs to be done...
+        System.out.println("Error in getting the response" + e.getMessage());// Exception handling needs to be done.........
+            e.printStackTrace();
     }
 }
 
-    private String getActionItemsFromText(String result) {
-        Pattern p = Pattern.compile("### \\*\\*Action Items\\*\\*([\\s\\S]*)");
-        Matcher m = p.matcher(result);
-        return m.find() ? m.group(1).trim() : "";
-    }
+//    private String getActionItemsFromText(String result) {
+//        Pattern p = Pattern.compile("### \\*\\*Action Items\\*\\*([\\s\\S]*)");
+//        Matcher m = p.matcher(result);
+//        return m.find() ? m.group(1).trim() : "";
+//    }
 
-    private String getSummaryFromText(String result) {
-        Pattern p = Pattern.compile("### \\*\\*Summary\\*\\*([\\s\\S]*?)### \\*\\*Action Items\\*\\*");
-        Matcher m = p.matcher(result);
-        return m.find() ? m.group(1).trim() : "";
-    }
+//    private String getSummaryFromText(String result) {
+//        Pattern p = Pattern.compile("### \\*\\*Summary\\*\\*([\\s\\S]*?)### \\*\\*Action Items\\*\\*");
+//        Matcher m = p.matcher(result);
+//        return m.find() ? m.group(1).trim() : "";
+//    }
 
-    private String getTitleFromText(String result) {
-        Pattern p = Pattern.compile("### \\*\\*Title:\\s*(.*?)\\*\\*");
-        Matcher m = p.matcher(result);
-        return m.find() ? m.group(1).trim() : "";
-    }
+//    private String getTitleFromText(String result) {
+//        Pattern p = Pattern.compile("### \\*\\*Title:\\s*(.*?)\\*\\*");
+//        Matcher m = p.matcher(result);
+//        return m.find() ? m.group(1).trim() : "";
+//    }
 
     public UserResponse getSummary(String request){
 
     String prompt = processRequest(request);
-    Map<String, Object> requestBody = getRequestBody(prompt);
+
+    System.out.println("Input is " + prompt);
+    GeminiRequest requestBody = getRequestBody(prompt);
+
+    System.out.println("The flow entered inside the Gemini Api request structure");
 
     GemResponse gemResponse = webClient.post()
             .uri(geminiUrl+geminiKey)
@@ -128,11 +175,23 @@ public class SummarizeGeminiApi {
             .bodyToMono(GemResponse.class)
             .block();
 
-    System.out.println(gemResponse);
+    System.out.println("This is the geminiResponse" + gemResponse.getCandidates().getFirst().getContent().getParts().getFirst());
     System.out.print("\n\n\n\n");
 
-    return extractRequiredResponseFromGeminiResponse(gemResponse);
+    UserResponse response = new UserResponse();
+    extractRequiredResponseFromGeminiResponse(response,gemResponse);
+
+    return getResponseAndUUIDAndSaveToRepository(response);
 }
 
+    private UserResponse getResponseAndUUIDAndSaveToRepository(UserResponse response) {
+        String uuid = meetingInsightService.saveToRepository(response.getTitle(), response.getSummarizedText(), response.getActionItems());
+
+        UserResponse saved = meetingInsightService.getMeetingByUUID(uuid);
+
+        response.setId(uuid);
+        response.setCreatedAt(saved.getCreatedAt());
+        return response;
+    }
 
 }
