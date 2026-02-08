@@ -12,6 +12,24 @@ body {
   padding-bottom: 20px;
 }
 
+#confirmation-modal::backdrop{
+  background-color: rgb(33, 33, 33);
+}
+
+#modal-buttons-container button {
+  border: 1px solid #7F8CAA;
+  padding: 8px 12px;
+  border-radius: 2px;
+}
+
+#modal-buttons-container button:hover {
+  cursor: pointer;
+}
+
+#preview {
+  height: 400px;
+}
+
 .file-picker-container {
   background-color: rgb(48, 48, 48);
 }
@@ -24,4 +42,17 @@ body {
   background-color: #303030;
   border-radius: 6px;
   color: white;
+}
+
+.skeleton {
+  animation: skeleton-loading 1s linear infinite alternate;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-color: #535353;
+    }
+    100% {
+        background-color: #6e6e6e;
+    }
 }
