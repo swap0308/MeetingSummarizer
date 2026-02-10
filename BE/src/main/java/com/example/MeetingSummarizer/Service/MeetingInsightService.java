@@ -50,7 +50,7 @@ public class MeetingInsightService {
         userResponse.setSummarizedText(meetingInsights.getSummary());
         userResponse.setTitle(meetingInsights.getTitle());
         userResponse.setActionItems(meetingInsights.getActionItems());
-
+        userResponse.setCreatedAt(meetingInsights.getCreatedAt());
 
         System.out.println("Returning the UserResponse");
         return userResponse;

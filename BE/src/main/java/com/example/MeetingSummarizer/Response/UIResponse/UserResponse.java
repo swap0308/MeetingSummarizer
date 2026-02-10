@@ -3,6 +3,7 @@ package com.example.MeetingSummarizer.Response.UIResponse;
 
 import lombok.Data;
 
+import java.time.LocalDateTime;
 import java.util.List;
 @Data
 public class UserResponse {
@@ -11,6 +12,6 @@ public class UserResponse {
     private String summarizedText;
     private String title;
     private List<String> actionItems;
-    private String createdAt;
+    private LocalDateTime createdAt;
 
 }

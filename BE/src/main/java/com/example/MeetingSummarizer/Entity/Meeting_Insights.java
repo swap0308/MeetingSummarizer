@@ -1,5 +1,6 @@
 package com.example.MeetingSummarizer.Entity;
 
+import com.example.MeetingSummarizer.Helper.StringListConverter;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -24,9 +25,11 @@ public class Meeting_Insights {
     @Lob
     private String summary;
 
+    @Convert(converter = StringListConverter.class)
     @Lob
     private List<String> actionItems;
 
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
 }

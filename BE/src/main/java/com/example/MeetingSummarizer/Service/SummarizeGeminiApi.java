@@ -44,7 +44,7 @@ public class SummarizeGeminiApi {
 
         StringBuilder prompt = new StringBuilder();
 
-        prompt.append("Provide a title and clear and concise summary ,also mention action items if any.\n\n");
+        prompt.append("Provide a title and clear and concise summary ,also mention action items if any. Return the action items strictly as a JSON array of strings also mentions on whom the action items are on.\n\n\n");
         prompt.append(request);
 
         return prompt.toString();
@@ -111,19 +111,26 @@ public class SummarizeGeminiApi {
 
                         System.out.println("MeetingResponse from Gemini API " + meetingResponse);
 
-//                        String title = getTitleFromText(result);
-//                        String summary = getSummaryFromText(result);
-//                        String actionItems = getActionItemsFromText(result);
-
                         String title = meetingResponse.getTitle();
                         String summary = meetingResponse.getSummary();
+
+                        try {
+                            ObjectMapper objectMapper1 = new ObjectMapper();
+                            String actionItemsJson = objectMapper1.writeValueAsString(meetingResponse.getActionItems());
+                            response.setActionItems(List.of(actionItemsJson));
+                            System.out.println("The Action items as JSON: " + actionItemsJson);
+                        } catch (Exception e) {
+                            System.out.println("Error converting action items to JSON: " + e.getMessage());
+                            e.printStackTrace();
+                        }
 
                         response.setTitle(title);
                         response.setSummarizedText(summary);
                         response.setActionItems(meetingResponse.getActionItems());
 
-                        System.out.println("Title  " +  title);
-                        System.out.println("Summary  " +  summary);
+                        System.out.println("The Title is " +  title);
+                        System.out.println("The Summary is " +  summary);
+                        System.out.println("The Action items are : " + meetingResponse.getActionItems());
                     }
                 }
             }
@@ -135,23 +142,6 @@ public class SummarizeGeminiApi {
     }
 }
 
-//    private String getActionItemsFromText(String result) {
-//        Pattern p = Pattern.compile("### \\*\\*Action Items\\*\\*([\\s\\S]*)");
-//        Matcher m = p.matcher(result);
-//        return m.find() ? m.group(1).trim() : "";
-//    }
-
-//    private String getSummaryFromText(String result) {
-//        Pattern p = Pattern.compile("### \\*\\*Summary\\*\\*([\\s\\S]*?)### \\*\\*Action Items\\*\\*");
-//        Matcher m = p.matcher(result);
-//        return m.find() ? m.group(1).trim() : "";
-//    }
-
-//    private String getTitleFromText(String result) {
-//        Pattern p = Pattern.compile("### \\*\\*Title:\\s*(.*?)\\*\\*");
-//        Matcher m = p.matcher(result);
-//        return m.find() ? m.group(1).trim() : "";
-//    }
 
     public UserResponse getSummary(String request){
 
@@ -188,7 +178,6 @@ public class SummarizeGeminiApi {
         String uuid = meetingInsightService.saveToRepository(response.getTitle(), response.getSummarizedText(), response.getActionItems());
 
         UserResponse saved = meetingInsightService.getMeetingByUUID(uuid);
-
         response.setId(uuid);
         response.setCreatedAt(saved.getCreatedAt());
         return response;
