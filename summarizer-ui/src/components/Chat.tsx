@@ -1,5 +1,15 @@
 import { useCallback, useRef, useState } from "react";
 import ConfirmationModal from "./ConfirmationModal";
+import Skeleton from "./Skeleton";
+
+type Summaries = {
+  isLoading: boolean,
+  id?: string,
+  summarizedText?: string,
+  title?: string,
+  actionItems?: string[] | null,
+  createdAt?: string
+};
 
 export default function Chat() {
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -9,31 +19,39 @@ export default function Chat() {
   const [file, setFile] = useState<File | null>(null);
   const [thumbnail, setThumbnail] = useState<string | null>(null);
   const [fileTitle, setFileTitle] = useState<string | null>(null);
+  const [summaries, setSummaries] = useState<Summaries[]>([]);
 
   const handleClick = () => {
     inputRef.current?.click();
   };
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = () => {
     if (!file) return;
+
+    setSummaries(prevState => [
+      ...prevState,
+      { isLoading: true }
+    ]);
+
 
     const formData = new FormData();
     formData.append("video", file);
-    formData.append("timestamp", String(Date.now()));
 
-    fetch("http://localhost:8080/getSummarizedText", {
+    fetch("http://localhost:8090/getSummarizedText", {
       method: "POST",
       body: formData,
     })
       .then((res) => res.json())
       .then((res) => {
-        console.log("Upload success:", res);
-        if (contentRef.current) {
-          contentRef.current.innerText = JSON.stringify(res, null, 2);
-        }
+        setSummaries(prevState => [
+          ...prevState.slice(0, -1),
+          { ...res, isLoading: false }
+        ]);
       })
-      .catch((err) => console.error("Upload failed:", err));
-  }, [file]);
+      .catch((err) => console.error("Upload failed:", err))
+      .finally(() => { modlRef.current?.close() });
+  };
+
 
   const showThumbnail = (videoURL: string, title: string) => {
     const video = document.createElement("video");
@@ -81,7 +99,24 @@ export default function Chat() {
         fileTitle={fileTitle || undefined}
       />
 
-      <div ref={contentRef} id="summarized-content"></div>
+      <div ref={contentRef} id="summarized-content">
+        {summaries?.length ? (summaries.map(summary => (
+          summary.isLoading ? <Skeleton height={300} /> : (
+            <div id={summary.id}>
+              <h2>{summary.title}</h2>
+              <p>{summary.summarizedText}</p>
+              {summary.actionItems?.length &&
+                (<>
+                  <h3>Action items</h3>
+                  {summary.actionItems?.map(item => (
+                    <li>{item}</li>
+                  ))}
+                </>)
+              }
+            </div>
+          )
+        ))) : <h3 className="text-white text-[32px]">Start summarizing your meetings!</h3>}
+      </div>
 
       <div className="flex justify-center">
         <button
