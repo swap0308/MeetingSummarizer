@@ -1,10 +1,10 @@
-package src.main.java.com.example.MeetingSummarizer.Response.GeminiResponse;
+package com.example.MeetingSummarizer.Response.GeminiResponse;
 
+import lombok.Data;
+
+@Data
 public class Part {
 
     private String text;
 
-    public String getText(){
-        return text;
-    }
 }

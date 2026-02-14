@@ -1,5 +1,8 @@
-package src.main.java.com.example.MeetingSummarizer.BaseFunctions;
+package com.example.MeetingSummarizer.BaseFunctions;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public class BaseServices {
 
     public boolean isNullOrEmpty(String str){

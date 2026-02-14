@@ -1,4 +1,4 @@
-package src.main.java.com.example.MeetingSummarizer.Service;
+package com.example.MeetingSummarizer.Service;
 
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
@@ -9,6 +9,7 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
@@ -23,7 +24,7 @@ public class TranscriptOpenAi {
         this.model = model;
     }
 
-    public ResponseEntity<String> getTranscript(MultipartFile file) throws IOException {
+    public ResponseEntity<String> getTranscript(@RequestParam("file") MultipartFile file) throws IOException {
 
         File tempFile = File.createTempFile("audio",".wav");
         file.transferTo(tempFile);
@@ -38,6 +39,7 @@ public class TranscriptOpenAi {
         AudioTranscriptionPrompt request = new AudioTranscriptionPrompt(new FileSystemResource(tempFile), options);
         AudioTranscriptionResponse response = model.call(request);
 
+        System.out.println("The response is generated from the OpenAi Api" + response.getResult().getOutput());
         tempFile.delete();
         return new ResponseEntity<>(response.getResult().getOutput(), HttpStatus.OK);
     }
