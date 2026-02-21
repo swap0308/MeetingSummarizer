@@ -11,6 +11,7 @@ import java.io.IOException;
 
 @RestController
 @RequestMapping("/api/transcribe")
+@CrossOrigin(origins = "*")
 public class TranscriptionController {
     private final TranscriptOpenAi transcriptService;
 

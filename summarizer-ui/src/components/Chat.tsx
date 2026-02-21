@@ -35,9 +35,9 @@ export default function Chat() {
 
 
     const formData = new FormData();
-    formData.append("video", file);
+    formData.append("file", file);
 
-    fetch("http://localhost:8090/getSummarizedText", {
+    fetch("http://localhost:8090/api/transcribe/getSummarizedText", {
       method: "POST",
       body: formData,
     })
@@ -132,7 +132,7 @@ export default function Chat() {
         onChange={handleFilePick}
         ref={inputRef}
         type="file"
-        accept="video/*"
+        accept="video/*, audio/*"
       />
     </div>
   );
